@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link href='https://fonts.googleapis.com/css?family=Montserrat' rel='stylesheet'>
+    <base target="_top">
+    <style>
+* {
+  font-family: 'Montserrat';
+}
+.result-item{
+  border: 2px solid black;
+  padding: 5px;
+  margin-bottom: 10px;
+max-width: 100%;
+align-items: center;
+border-radius: 5px;
+    background-color: mistyrose;
+}
+
+.results {
+  display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 12px;
+    border-radius: 10px;
+}
+
+<!-- Search Button -->
+@import url(https://fonts.googleapis.com/css?family=Open+Sans);
+
+body{
+  background: #f2f2f2;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.search {
+  display: flex;
+  justify-content: center;
+}
+
+.searchTerm {
+  width: 50%;
+  border: 3px solid #fc017c;
+  border-right: none;
+  padding: 5px;
+  height: 20px;
+  border-radius: 5px 0 0 5px;
+  outline: none;
+  color: #fc017c;
+}
+
+.searchTerm:focus{
+  color: #fc017c;
+}
+
+.searchButton {
+  border: 1px solid #fc017c;
+  background: #fc017c;
+  text-align: center;
+  color: #fff142;
+  border-radius: 0 5px 5px 0;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: bolder;
+}
+
+.delCta, .editCta {
+    border: 1px solid #fc017c;
+  background: #fc017c;
+  text-align: center;
+  color: #fff142;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bolder;
+  margin: 2px;
+    width: 70px;
+    height: 35px;
+}
+
+<!-- Headers  -->
+
+.test {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 12px;
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  border-bottom: 2px solid black;
+  padding: 10px;
+  font-size: 20px;
+    font-weight: bolder;
+    padding-top: 20px;
+        color: #fc017c;
+}
+
+.header-item {
+  flex: 1;
+  text-align: center;
+}
+
+.result-item {
+  display: flex;
+      justify-content: space-evenly;
+  max-width: 100%;
+  border: 2px solid black;
+  padding: 5px;
+  margin-top: 10px;
+}
+
+.result-item > div {
+  flex: 1;
+  text-align: center;
+}
+
+.edit-delete {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.wrap{
+}
+
+
+    </style>
+  </head>
+  <body>
+
+<div class="wrap">
+   <div class="search">
+<input type="text" id="searchTerm" class="searchTerm" placeholder="Enter name or date">
+    <button class="searchButton" onclick="searchData()">Search</button>
+</div>
+</div>
+
+<div id="test" class="test">
+  <div class="header">
+    <div class="header-item">Name</div>
+    <div class="header-item">Date</div>
+    <div class="header-item">Actions</div>
+  </div>
+</div>
+
+ <div id="results"></div>
+     <script>
+     function searchData() {
+    var searchTerm = document.getElementById("searchTerm").value;
+    google.script.run.withSuccessHandler(displayResults).searchData(searchTerm);
+}
+
+function displayResults(results) {
+    var container = document.getElementById("results");
+    container.innerHTML = "";
+
+    results.forEach(function(booking, index) {
+        var resultItem = document.createElement("div");
+        resultItem.classList.add("result-item");
+        resultItem.id = "resultItem" + index; // Set a unique ID for each result item
+
+        var parts = booking.split(" - ");
+        var name = parts[0];
+        var dateStr = parts[1];
+
+        var date = new Date(dateStr);
+        var day = date.getDate();
+        var month = date.getMonth() + 1;
+        var year = date.getFullYear();
+        var formattedDate = (day < 10 ? '0' : '') + day + '/' + (month < 10 ? '0' : '') + month + '/' + year;
+
+        var bookingInfoName = document.createElement("div");
+        bookingInfoName.classList.add("nameWrap");
+        bookingInfoName.textContent = name;
+
+        var bookingInfoDate = document.createElement("div");
+        bookingInfoDate.classList.add("dateWrap");
+        bookingInfoDate.textContent = formattedDate;
+
+        resultItem.appendChild(bookingInfoName);
+        resultItem.appendChild(bookingInfoDate);
+
+        var ctaWrapper = document.createElement("div");
+        ctaWrapper.classList.add("ctaWrapper");
+
+        var editButton = document.createElement("button");
+        editButton.textContent = "Edit";
+        editButton.classList.add("editCta");
+        editButton.onclick = function() {
+            editBooking(name, dateStr, index); // Pass name, dateStr, and index to the editBooking function
+        };
+
+        ctaWrapper.appendChild(editButton);
+
+        var deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.classList.add("delCta");
+        deleteButton.onclick = function() {
+            var confirmDelete = confirm("Are you sure you want to delete the booking for " + name + " - " + formattedDate + "?");
+            if (confirmDelete) {
+                google.script.run.deleteBookingFromSheet(name, dateStr);
+                resultItem.remove();
+                alert("Your booking has been deleted.");
+                closeModal();
+                location.reload();
+            }
+        };
+
+        ctaWrapper.appendChild(deleteButton);
+        resultItem.appendChild(ctaWrapper);
+
+        container.appendChild(resultItem);
+    });
+}
+
+// function editBooking(name, dateStr, index) {
+//     var resultItem = document.getElementById("resultItem" + index);
+
+//     var dateDiv = resultItem.getElementsByClassName("dateWrap")[0];
+//     var dateValue = dateDiv.textContent;
+//     var dateInput = document.createElement("input");
+//     dateInput.type = "text";
+//     dateInput.value = dateValue;
+//     dateDiv.textContent = "";
+//     dateDiv.appendChild(dateInput);
+
+//     var editButton = resultItem.getElementsByClassName("editCta")[0];
+//     editButton.textContent = "Save";
+//     editButton.onclick = function() {
+//       // saveBooking(name, index);
+//           console.log("Saved")
+//     console.log(name, index)
+//     var resultItem = document.getElementById("resultItem" + index);
+//     var newDate = resultItem.getElementsByClassName("dateWrap")[0].getElementsByTagName("input")[0].value;
+//     console.log(resultItem, newDate)
+//     google.script.run.editBooking(name, dateStr, newDate);
+//     alert("Your new date has been saved.");
+//     closeModal();
+//     location.reload();
+//     };
+// }
+function editBooking(name, dateStr, index) {
+    var resultItem = document.getElementById("resultItem" + index);
+
+    var dateDiv = resultItem.getElementsByClassName("dateWrap")[0];
+    var dateValue = dateDiv.textContent;
+    var dateInput = document.createElement("input");
+    dateInput.type = "text";
+    dateInput.value = dateValue;
+    dateDiv.textContent = "";
+    dateDiv.appendChild(dateInput);
+
+    var editButton = resultItem.getElementsByClassName("editCta")[0];
+    editButton.textContent = "Save";
+    editButton.onclick = function() {
+        var newDateInput = resultItem.getElementsByClassName("dateWrap")[0].getElementsByTagName("input")[0];
+        var newDateStr = newDateInput.value;
+        
+        // Split the input date string by "/"
+        var dateParts = newDateStr.split("/");
+        
+        // Check if the input consists of three parts (dd, mm, yyyy)
+        if (dateParts.length === 3) {
+            var day = parseInt(dateParts[0]);
+            var month = parseInt(dateParts[1]);
+            var year = parseInt(dateParts[2]);
+            
+            // Check if the parsed values represent a valid date
+            if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
+                var newDate = new Date(year, month - 1, day); // Create a Date object
+                if (!isNaN(newDate.getTime())) {
+                    // Format the date as mm/dd/yyyy
+                    var formattedDate = (newDate.getMonth() + 1) + '/' + newDate.getDate() + '/' + newDate.getFullYear();
+                    google.script.run.editBooking(name, dateStr, formattedDate); // Send the formatted date to the server
+                    alert("Your new date has been saved.");
+                    closeModal();
+                    location.reload();
+                } else {
+                    alert("Invalid date. Please enter a valid date.");
+                }
+            } else {
+                alert("Invalid date format. Please enter a valid date.");
+            }
+        } else {
+            alert("Invalid date format. Please enter a valid date.");
+        }
+    };
+}
+
+
+
+
+function closeModal() {
+            google.script.host.close(); // Close the modal
+        }
+
+function saveBooking(name, index) {
+    var resultItem = document.getElementById("resultItem" + index);
+    var newDate = resultItem.getElementsByClassName("dateWrap")[0].getElementsByTagName("input")[0].value;
+    // newDate = newDate.toString()
+    newDate = parseInt(newDate);
+    google.script.run.editBooking(name, newDate);
+    closeModal();
+    location.reload();
+}
+
+
+    </script>
+  </body>
+</html>
